@@ -189,4 +189,72 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "/path");
     }
+
+    #[test]
+    fn test_parse_invalid_url() {
+        let my_url = MyUrl{url: Url::parse("https://example.com").unwrap()};
+
+        assert!(my_url.parse("", None).is_err());
+        assert!(my_url.parse("https://example.com", None).is_err());
+        assert!(my_url.parse("javascript:alert(1)", None).is_err());
+        assert!(my_url.parse("mailto:test@example.com", None).is_err());
+    }
+
+    #[test]
+    fn test_query_map() {
+        let my_url = MyUrl{url: Url::parse("https://example.com/path?key1=value1&key2=value2").unwrap()};
+        let query_map = my_url.query_map();
+
+        assert_eq!(query_map.len(), 2);
+        assert_eq!(query_map.get("key1").unwrap(), "value1");
+        assert_eq!(query_map.get("key2").unwrap(), "value2");
+    }
+
+    #[test]
+    fn test_no_query_url() {
+        let my_url = MyUrl{url: Url::parse("https://example.com/path?key=value").unwrap()};
+
+        assert_eq!(my_url.no_query_url(), "https://example.com/path");
+        assert_eq!(my_url.no_query_url(), "https://example.com/path?key=value");
+    }
+
+    #[test]
+    fn test_no_fragment_url() {
+        let my_url = MyUrl{url: Url::parse("https://example.com/path#fragment").unwrap()};
+        assert_eq!(my_url.no_fragment_url(), "https://example.com/path");
+        assert_eq!(my_url.no_fragment_url(), "https://example.com/path#fragment");
+    }
+
+    #[test]
+    fn test_no_scheme_fragment_url() {
+        let my_url = MyUrl{url: Url::parse("https://example.com/path#fragment").unwrap()};
+
+        assert_eq!(my_url.no_scheme_fragment_url(), "://example.com/path");
+    }
+
+    #[test]
+    fn test_navigation_url() {
+        let my_url = MyUrl{url: Url::parse("https://example.com/path").unwrap()};
+
+        assert_eq!(my_url.navigation_url(), "://example.com/path");
+    }
+
+    #[test]
+    fn test_file_extension() {
+        let my_url = MyUrl{url: Url::parse("https://example.com/path/to/file.txt").unwrap()};
+
+        assert_eq!(my_url.file_extension(), "txt");
+    }
+
+    #[test]
+    fn test_filename() {
+        let my_url = MyUrl{url: Url::parse("https://example.com/path/to/file.txt").unwrap()};
+        assert_eq!(my_url.filename(), Some("file.txt".to_string()));
+    }
+
+    #[test]
+    fn test_parent_path() {
+        let my_url = MyUrl{url: Url::parse("https://example.com/path/to/file").unwrap()};
+        assert_eq!(my_url.parent_path(), Some("to".to_string()));
+    }
 }
