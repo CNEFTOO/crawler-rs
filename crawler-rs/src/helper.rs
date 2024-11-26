@@ -3,7 +3,8 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 
 pub fn get_md5(input: &str) -> String {
-    md5::compute(input).to_string();
+    let digest = md5::compute(input);
+    format!("{:x}", digest)
 }
 
 pub fn convert_headers(h: HashMap<String, String>) -> HashMap<String, String> {
@@ -44,7 +45,7 @@ pub fn string_slice_contain(data: &[String], item: &str) -> bool {
 
 pub fn map_string_format(data: &HashMap<String, String>) -> String {
     data.iter()
-        .map(|key, value| format!("{}={}", key, value))
+        .map(|(key, value)| format!("{}={}", key, value))
         .collect::<Vec<String>>()
         .join(",")
 }

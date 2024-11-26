@@ -56,9 +56,10 @@ impl Request {
         };
 
         if let Some(options) = options {
-            if let Some(headers) = options.headers {
-                request.headers = headers;
-            }
+            // if let Some(headers) = options.headers {
+            //     request.headers = headers;
+            // }
+            request.headers = options.headers;
 
             if !options.post_data.is_empty() {
                 request.post_data = options.post_data;
@@ -139,9 +140,16 @@ impl Request {
         if let Some(content_type) = self.headers.get("Content-Type")
             .or(self.headers.get("Content-type"))
             .or(self.headers.get("content-type")) {
-            for &ct in &SUPPORT_CONTENT_TYPE  {
-                if content_type.starts_with(ct) {
-                    return Ok(content_type.clone());
+            // for &ct in &SUPPORT_CONTENT_TYPE  {
+            //     if content_type.starts_with(ct) {
+            //         return Ok(content_type.clone());
+            //     }
+            // }
+            if let Some(content_type) = content_type.as_str() {
+                for &ct in &SUPPORT_CONTENT_TYPE {
+                    if content_type.starts_with(ct) {
+                        return Ok(ct.to_string());
+                    }
                 }
             }
             Err("Unsupported content type".into())

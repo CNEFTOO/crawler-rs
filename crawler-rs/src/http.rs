@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::time::Duration;
-use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::Response;
 
 const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36 C845D9D38B3A68F4F74057DB542AD252 tx/2.0";
@@ -58,11 +58,11 @@ impl HttpClient {
     }
 
     pub async fn get(&self, url: &str, headers: HashMap<String, String>) -> Result<Response, reqwest::Error> {
-        self.request("GET", url, headers, None)
+        self.request("GET", url, headers, None).await
     }
 
     pub async fn post(&self, url: &str, headers: HashMap<String, String>, body: Option<&[u8]>) -> Result<Response, reqwest::Error> {
-        self.request("POST", url, headers, body)
+        self.request("POST", url, headers, body).await
     }
 
     pub async fn request(&self,
@@ -74,7 +74,7 @@ impl HttpClient {
         let mut req = self.client.request(method.parse().unwrap(), url);
         let mut header = HeaderMap::new();
         for (k, v) in headers {
-            header.insert(k.parse().unwrap(), HeaderValue::from_str(&v).unwrap());
+            header.insert(k.parse::<HeaderName>().unwrap(), HeaderValue::from_str(&v).unwrap());
         }
         header.insert("User-Agent", HeaderValue::from_static(DEFAULT_USER_AGENT));
         req = req.headers(header);

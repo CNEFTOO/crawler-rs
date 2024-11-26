@@ -26,8 +26,10 @@ impl BrowserManager {
             ..Default::default()
         };
 
-        let b = Browser::new(options).map_err(|err| err.into());
-        Ok(Self { browser })
+        // let b: Result<headless_chrome::Browser, Box<dyn std::error::Error>> = Browser::new(options)
+        //     .map_err(|err| Box::new(err) as Box<dyn std::error::Error>);
+        let b = Browser::new(options).map_err(|err| err.to_string())?;
+        Ok(Self { browser: b })
     }
 
     pub fn new_tab(&self, timeout: Option<Duration>) -> Result<Arc<Tab>, Box<dyn std::error::Error>>  {
@@ -39,10 +41,16 @@ impl BrowserManager {
         });
         let tab_arc = match timeout {
             Some(timeout) => rx.recv_timeout(timeout).map_err(|e| match e {
-                mpsc::RecvTimeoutError::Timeout => "create new tab error".into(),
-                mpsc::RecvTimeoutError::Disconnected => "disconnect error".into(),
+                mpsc::RecvTimeoutError::Timeout => {
+                    Box::<dyn std::error::Error>::from(format!("Timeout in channel"))
+                }
+                mpsc::RecvTimeoutError::Disconnected => {
+                    Box::<dyn std::error::Error>::from(format!("Connection closed"))
+                },
             })?,
-            None => rx.recv().map_err(|_| "new browser tab failed".into())?,
+            None => rx
+                .recv()
+                .map_err(|_| Box::<dyn std::error::Error>::from(format!("Channel closed")))?,
         };
 
         tab_arc.map_err(|e| Box::<dyn std::error::Error>::from(e).into())

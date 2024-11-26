@@ -17,21 +17,36 @@ impl MyUrl {
 
         let parse_url = u.parse(_url, parent_urls)?;
 
-        if parent_urls.is_some() {
-            u.url = Url::parse(parent_urls.unwrap().url.as_str())?;
-            if u.url.path() == "" {
-                u.url.set_path("/");
+        if let Some(p_url) = parent_urls {
+            u.url = Url::parse(p_url.url.as_str())?;
+            if u.url.path().is_empty() {
+                u.url.set_path("/")
             }
-        } else if let Some(p_url) = parent_urls {
-            u.url = p_url.url.join(parse_url.as_str())?;
-            if u.url.path() == "" {
-                u.url.set_path("/");
+        } else {
+            u.url = Url::parse(parse_url.as_str())?;
+            if u.url.path().is_empty() {
+                u.url.set_path("/")
             }
         }
 
+        // if parent_urls.is_some() {
+        //     u.url = Url::parse(parent_urls.unwrap().url.as_str())?;
+        //     if u.url.path() == "" {
+        //         u.url.set_path("/");
+        //     }
+        // } else if let Some(p_url) = parent_urls {
+        //     u.url = p_url.url.join(parse_url.as_str())?;
+        //     if u.url.path() == "" {
+        //         u.url.set_path("/");
+        //     }
+        // }
+
         let fix_path = Regex::new(r"^/{2,}")?;
-        if fix_path.is_match(u.url.path()) {
-            u.url.set_path(fix_path.replace_all(u.url.path(), "/").as_ref());
+        let current_path = u.url.path().to_owned();
+        if fix_path.is_match(&current_path) {
+            // u.url.set_path(fix_path.replace_all(u.url.path(), "/").as_ref());
+            let new_path = fix_path.replace_all(&current_path, "/");
+            u.url.set_path(new_path.as_ref());
         }
 
         Ok(u)
@@ -107,11 +122,13 @@ impl MyUrl {
 
         // 获取域名后缀并判断有效性
         let suffix = match list.domain(domain.as_bytes()) {
-            Ok(domain) => domain,
-            Err(_) => return None,
+            Some(suffix) => suffix,
+            None => return None,
         };
 
-        let i = domain.len() - suffix.len() - 1;
+        let suffix_str = suffix.suffix().as_bytes();
+
+        let i = domain.len() - suffix_str.len() - 1;
         if i <= 0 || domain.as_bytes()[i] != b'.' {
             return None;
         }
@@ -141,5 +158,35 @@ impl MyUrl {
         } else {
             Some(path.rsplit('/').skip(1).collect())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_parse_absolute_url() {
+        let my_url = MyUrl{url: Url::parse("https://example.com").unwrap()};
+
+        let result = my_url.parse("https://example.com/path", None);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "https://example.com/path");
+    }
+
+    #[test]
+    fn test_parse_relative_url() {
+        let parent_url = MyUrl{
+            url: Url::parse("https://example.com").unwrap(),
+        };
+
+        let my_url = MyUrl{
+            url: Url::parse("https://www.example.com").unwrap(),
+        };
+
+        let result = my_url.parse("/path", Some(&parent_url));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "/path");
     }
 }
